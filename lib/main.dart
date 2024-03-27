@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:my_flutter_app/casual.dart';
-import 'package:my_flutter_app/ranked.dart';
-import 'package:my_flutter_app/speed.dart';
-import 'package:my_flutter_app/leaderboard.dart';
+import 'package:my_flutter_app/screens/casual.dart';
+import 'package:my_flutter_app/screens/ranked.dart';
+import 'package:my_flutter_app/screens/speed.dart';
+import 'package:my_flutter_app/screens/leaderboard.dart';
 import 'package:my_flutter_app/splash_screen.dart';
 
 void main() {
@@ -66,7 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 color: Colors.black,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
                 onPressed: () {
                   Navigator.push(context,

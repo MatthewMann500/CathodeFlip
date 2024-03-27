@@ -1,51 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-
-class CasualGame extends StatelessWidget {
-  CasualGame({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Casual Screen'),
-      ),
-      body: Center(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Level: 0', // Add your text here
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 5),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '000000', // Add your text here
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Grid6x6(),
-            const SizedBox(height: 20),
-            // Add the Grid6x6 widget here
-          ],
-        ),
-      ),
-    );
-  }
-}
+import 'single_square_animation.dart';
 
 class Grid6x6 extends StatelessWidget {
   final levels = {
@@ -101,6 +57,10 @@ class Grid6x6 extends StatelessWidget {
   };
   final Set<int> boardType = Set();
   final Set<Point<int>> generatedPoints = {};
+  final Function(int, int) onSumChange;
+  int sum = 0;
+  int level;
+  Grid6x6({Key? key, required this.onSumChange, required this.level}) : super(key: key);
 
   Point<int> generateUniquePoint(int maxX, int maxY) {
     Random random = Random();
@@ -117,23 +77,27 @@ class Grid6x6 extends StatelessWidget {
 
   int testCount = -1;
   int testCount2 = 0;
-  int sum = 0;
-
+  int seed = Random().nextInt(5);
+  int stopLevel = 0;
   @override
   Widget build(BuildContext context) {
-    boardType.add(Random().nextInt(5));
-    int specifics = boardType.first;
+
+    if(level > 7)
+    {
+        stopLevel = 7;
+    }
+    else {
+      stopLevel = level;
+    }
     List<List<int>> rowSumsZeros = List.generate(5, (_) => [0, 0]);
     List<List<int>> colSumsZeros = List.generate(5, (_) => [0, 0]);
-    List<List<int>> sublist = levels["1"]!;
-    List<int> testList = levels["1"]?[specifics] ?? [];
-    int number = sublist[specifics].reduce((value, element) => value + element);
-
-    for (int i = 0; i < number; ++i) {
-      Point<int> point =
-          generateUniquePoint(5, 5); //Randomly picks points to put 2s, 3s, 0s
+    List<List<int>> seedList = levels[stopLevel.toString()]!;
+    List<int> placeSeed = levels[stopLevel.toString()]?[seed] ?? [];
+    int numberPoints = seedList[seed].reduce((value, element) => value + element);
+    sum = placeSeed[0] * 2 + placeSeed[1] * 3;
+    for (int i = 0; i < numberPoints; ++i) {
+        generateUniquePoint(5, 5); //Randomly picks points to put 2s, 3s, 0s
     }
-
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(6, (rowIndex) {
@@ -182,29 +146,23 @@ class Grid6x6 extends StatelessWidget {
                   break;
                 case 5:
                   imagePath =
-                      'images/numTile0.png'; // use this to sum up the rows/ columns
+                  'images/numTile0.png'; // use this to sum up the rows/ columns
                   break;
               }
             } else {
               imagePath = 'images/blanktile.png';
               if (generatedPoints.contains(Point(rowIndex, colIndex))) {
-                bool testings = true;
+                bool loopCheck = true;
                 int randomIndex = 0;
-                while (testings) {
+                while (loopCheck) {
                   randomIndex = Random().nextInt(3);
-                  if (testList[randomIndex] > 0) {
+                  if (placeSeed[randomIndex] > 0) {
                     randomIndex = randomIndex + 1;
                     backCardPath = 'images/numberTile$randomIndex.png';
-                    --testList[randomIndex - 1];
-                    testings = false;
-                    if (randomIndex == 1) {
-                      sum += 2;
-                    } else if (randomIndex == 2) {
-                      sum += 3;
-                    }
+                    --placeSeed[randomIndex - 1];
+                    loopCheck = false;
                   }
                 }
-                print(sum);
                 switch (randomIndex - 1) {
                   case 0: // 2
                     rowSumsZeros[rowIndex][0] += 2;
@@ -234,18 +192,19 @@ class Grid6x6 extends StatelessWidget {
             return Stack(
               children: [
                 SingleSquareAnimation(
-                  context: context,
                   imagePath: imagePath,
                   backCardPath: backCardPath,
                   rowSumsZeros: rowSumsZeros,
                   colSumsZeros: colSumsZeros,
+                  sum: sum,
+                  onSumChange: onSumChange,
                 ),
                 if (shouldDisplayText(rowIndex, colIndex))
                   Positioned.fill(
                     child: Center(
                       child: Text(
                         combinedSumsZeros[testCount2][testCount].toString(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16.0,
@@ -274,128 +233,5 @@ class Grid6x6 extends StatelessWidget {
       return true;
     }
     return false;
-  }
-}
-
-class SingleSquareAnimation extends StatefulWidget {
-  final BuildContext context; // Add context here
-  final String imagePath;
-  final String backCardPath;
-  final List<List<int>> rowSumsZeros;
-  final List<List<int>> colSumsZeros;
-  const SingleSquareAnimation({
-    Key? key,
-    required this.context,
-    required this.imagePath,
-    required this.backCardPath,
-    required this.rowSumsZeros,
-    required this.colSumsZeros,
-  }) : super(key: key);
-
-  @override
-  _SingleSquareAnimationState createState() => _SingleSquareAnimationState();
-}
-
-class _SingleSquareAnimationState extends State<SingleSquareAnimation>
-    with SingleTickerProviderStateMixin {
-  AnimationController? _controller;
-  Animation<double>? _animation;
-  bool _isCardFlipVisible = true;
-  bool build2 = false;
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 200),
-    );
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller!)
-      ..addListener(() {
-        setState(() {});
-      });
-  }
-
-  @override
-  void dispose() {
-    _controller!.dispose();
-    super.dispose();
-  }
-
-  void _flipCard() {
-    if (_isCardFlipVisible) {
-      _controller!.forward().then((_) {
-        setState(() {
-          _isCardFlipVisible = false;
-        });
-      });
-    } else {
-      _controller!.reverse().then((_) {
-        setState(() {});
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (widget.imagePath == 'images/blanktile.png') {
-          _flipCard();
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 2.0),
-        child: Transform(
-          transform: Matrix4.rotationY(
-              _isCardFlipVisible ? _animation!.value * 3.14 : 0),
-          alignment: Alignment.center,
-          child: SizedBox(
-            width: 55,
-            height: 55,
-            child: _isCardFlipVisible ? _buildBack() : _buildFront(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFront() {
-    if (build2 == false) {
-      if (widget.backCardPath == 'images/numberTile1.png' ||
-          widget.backCardPath == 'images/numberTile2.png') {
-        build2 = true;
-      }
-    }
-    return ClipRRect(
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blueGrey, width: 3),
-          borderRadius: BorderRadius.circular(5.0),
-        ),
-        child: Image.asset(
-          widget.backCardPath,
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBack() {
-    return ClipRRect(
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(5.0),
-          border: Border.all(color: Colors.blueGrey, width: 3),
-        ),
-        child: Center(
-          child: Image.asset(
-            widget.imagePath,
-            fit: BoxFit.cover,
-            width: 55,
-            height: 55,
-          ),
-        ),
-      ),
-    );
   }
 }
